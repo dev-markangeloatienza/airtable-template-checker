@@ -12,7 +12,7 @@ npm install
 
 ## Inputs
 
-Update the `.env` file using the `.env.local` as reference. Where `BASE_ID` serves as the updated template and `CLIENT_BASE_ID` for the outdated template.
+Update the `.env` file using the `.env.local` as reference. Where `BASE_ID` serves as the updated template and `CLIENT_BASE_ID` for the outdated template. Also the `API_KEY` refers to the `token` generated from the `Builder Hub`
 
 ## Run the script
 
