@@ -1,5 +1,5 @@
 // const converter = require("json-2-csv");
-const converter = require("@json2csv/plainjs")
+const converter = require("@json2csv/plainjs");
 const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
@@ -24,33 +24,31 @@ const getTableHeaders = async (id, table) => {
   }
 };
 
-const saveCsv = async (csvData, title) => {
-  const folderPath = path.resolve("./csv");
+const saveCsv = async (csvData, title, isTable = false) => {
+  const folderPath = isTable
+    ? path.resolve("./missing_tables")
+    : path.resolve("./missing_fields");
   const fileName = `${title}.csv`;
   const filePath = path.join(folderPath, fileName);
-  console.log("Folder Path: ", folderPath); 
+  console.log("Folder Path: ", folderPath);
 
-  
-try {
-  const parser = new converter.Parser();
-  const csv = parser.parse(csvData);
-  console.log(csv);
-
-  console.log("CSV", csv);
-  if (!fs.existsSync(folderPath)) {
-    console.log("Folder does not exist, creating folder...");
-    fs.mkdirSync(folderPath, { recursive: true });
-  }
-  fs.writeFile(filePath, csv, (err) => {
-    if (err) {
-      console.error("Error writing CSV to file:", err);
-    } else {
-      console.log(`CSV file saved to ${filePath}`);
+  try {
+    const parser = new converter.Parser();
+    const csv = parser.parse(csvData);
+    if (!fs.existsSync(folderPath)) {
+      console.log("Folder does not exist, creating folder...");
+      fs.mkdirSync(folderPath, { recursive: true });
     }
-  });
-} catch (err) {
-  console.error(err);
-}
+    fs.writeFile(filePath, csv, (err) => {
+      if (err) {
+        console.error("Error writing CSV to file:", err);
+      } else {
+        console.log(`CSV file saved to ${filePath}`);
+      }
+    });
+  } catch (err) {
+    console.error(err);
+  }
 };
 
 const run = async () => {
@@ -61,9 +59,22 @@ const run = async () => {
     clientBaseTables.some((client) => client["name"] === base["name"])
   );
 
-  const clientTables = clientBaseTables.filter((client) =>
-    baseTables.some((base) => base["name"] === client["name"])
+  const missingTables = baseTables.filter(
+    (base) =>
+      !clientBaseTables.some((client) => client["name"] === base["name"])
   );
+
+  missingTables.forEach((missingTable) => {
+    let currentTable = missingTable["name"];
+    let fields = missingTable["fields"];
+    let csvData = fields.map((field) => {
+      return {
+        name: field["name"],
+        type: field["type"],
+      };
+    });
+    saveCsv(csvData, currentTable, true);
+  });
 
   sameTables.forEach((sameTable) => {
     clientBaseTables.forEach((clientTable) => {
@@ -75,23 +86,15 @@ const run = async () => {
           (base) =>
             !clientFields.some((client) => client["name"] === base["name"])
         );
-
+        console.log("Fields: ", fields);
         if (fields && fields.length > 0) {
-          // console.log("====================================");
-          // console.log("Table: ", currentTable);
-          // console.log("Fields: ", fields);
-          // console.log("Count: ", fields.length);
-          // console.log("====================================");
-
           let csvData = fields.map((field) => {
             return {
-              "name": field["name"],
-              "type": field["type"],
+              name: field["name"],
+              type: field["type"],
+              options: field["options"],
             };
           });
-
-          // console.log("Table: ", csvData);
-
           saveCsv(csvData, currentTable);
         }
       }
